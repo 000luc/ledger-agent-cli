@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import json
 from pathlib import Path
 
 import typer
@@ -36,6 +37,19 @@ app.add_typer(saved_query_app, name="saved-query")
 
 def echo_json(payload: str) -> None:
     typer.echo(payload)
+
+
+def parse_key_values(items: list[str] | None) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for item in items or []:
+        if "=" not in item:
+            raise ValueError("--value must use key=value format")
+        key, value = item.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise ValueError("--value key cannot be empty")
+        parsed[key] = value
+    return parsed
 
 
 def exit_with_error(command: str, exc: Exception) -> None:
@@ -200,9 +214,10 @@ def saved_query_add_command(
     name: str = typer.Option(..., "--name"),
     description: str = typer.Option(..., "--description"),
     query: str = typer.Option(..., "--query"),
+    parameter: list[str] = typer.Option(None, "--parameter"),
 ) -> None:
     try:
-        echo_json(success("saved-query.add", add_saved_query(db, name, description, query)))
+        echo_json(success("saved-query.add", add_saved_query(db, name, description, query, parameter)))
     except Exception as exc:
         exit_with_error("saved-query.add", exc)
 
@@ -220,9 +235,15 @@ def saved_query_list_command(db: Path = typer.Option(..., "--db")) -> None:
 def saved_query_run_command(
     db: Path = typer.Option(..., "--db"),
     name: str = typer.Option(..., "--name"),
+    values: str = typer.Option("{}", "--values", help="JSON object for named SQL parameters"),
+    value: list[str] = typer.Option(None, "--value", help="Named SQL parameter as key=value"),
     limit: int = typer.Option(200, "--limit"),
 ) -> None:
     try:
-        echo_json(success("saved-query.run", run_saved_query(db, name, limit)))
+        parsed_values = json.loads(values)
+        if not isinstance(parsed_values, dict):
+            raise ValueError("--values must be a JSON object")
+        parsed_values.update(parse_key_values(value))
+        echo_json(success("saved-query.run", run_saved_query(db, name, parsed_values, limit)))
     except Exception as exc:
         exit_with_error("saved-query.run", exc)

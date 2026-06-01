@@ -34,3 +34,44 @@ def test_saved_query_add_list_run(runner, tmp_path):
     )
     run_payload = parse_json(run_result)
     assert run_payload["command"] == "saved-query.run"
+
+
+def test_saved_query_supports_named_parameters(runner, tmp_path):
+    db_path = tmp_path / "ledger.db"
+    init_db(db_path)
+
+    add_result = runner.invoke(
+        app,
+        [
+            "saved-query",
+            "add",
+            "--db",
+            str(db_path),
+            "--name",
+            "echo-year",
+            "--description",
+            "Echo a year parameter",
+            "--query",
+            "SELECT :year AS year",
+            "--parameter",
+            "year",
+        ],
+    )
+    add_payload = parse_json(add_result)
+    assert add_payload["data"]["parameters"] == ["year"]
+
+    run_result = runner.invoke(
+        app,
+        [
+            "saved-query",
+            "run",
+            "--db",
+            str(db_path),
+            "--name",
+            "echo-year",
+            "--value",
+            "year=2025",
+        ],
+    )
+    run_payload = parse_json(run_result)
+    assert run_payload["data"]["rows"][0]["year"] == "2025"

@@ -14,4 +14,7 @@ ledger-cli variance gl --db ledger.db --company 公司A --year 2025 --compare-ye
 ledger-cli trace depreciation --db ledger.db --company 公司A --year 2025
 ledger-cli reconcile gl-tb --db ledger.db --company 公司A --year 2025
 ledger-cli sql select --db ledger.db --query "SELECT name FROM companies"
+ledger-cli saved-query add --db ledger.db --name echo-year --description "Echo year" --query "SELECT :year AS year" --parameter year
+ledger-cli saved-query list --db ledger.db
+ledger-cli saved-query run --db ledger.db --name echo-year --value year=2025
 ```

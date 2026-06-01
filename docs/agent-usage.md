@@ -13,6 +13,7 @@ Recommended order:
    - `trace depreciation`
    - `reconcile gl-tb`
 5. Use `sql select` only for exploratory read-only queries.
+6. Promote reviewed exploratory SQL with `saved-query add`, then reuse it with `saved-query run --value key=value`.
 
 When answering a user, include:
 
