@@ -1,0 +1,12 @@
+{
+  "month": "月份",
+  "voucher_date": "凭证日期",
+  "voucher_no": "凭证字号",
+  "line_no": "行号",
+  "summary": "摘要",
+  "account_code": "科目编码",
+  "account_name": "科目名称",
+  "debit": "借方金额",
+  "credit": "贷方金额",
+  "auxiliary": "辅助核算"
+}

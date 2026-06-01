@@ -1,0 +1,14 @@
+{
+  "month": "月份",
+  "account_code": "科目编码",
+  "account_name": "科目名称",
+  "account_level": "科目层级",
+  "opening_balance": "期初余额",
+  "current_debit": "本期借方",
+  "current_credit": "本期贷方",
+  "ytd_debit": "累计借方",
+  "ytd_credit": "累计贷方",
+  "ending_balance": "期末余额",
+  "balance_direction": "余额方向",
+  "auxiliary": "辅助核算"
+}
