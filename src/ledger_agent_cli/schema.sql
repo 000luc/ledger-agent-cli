@@ -108,3 +108,9 @@ CREATE INDEX IF NOT EXISTS idx_journal_lines_company_year_month
 
 CREATE INDEX IF NOT EXISTS idx_trial_balance_company_year_account
   ON trial_balance(company_id, year, account_code, account_name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_journal_lines_unique_line
+  ON journal_lines(company_id, year, month, voucher_no, line_no);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_trial_balance_unique_row
+  ON trial_balance(company_id, year, month, account_code, COALESCE(auxiliary, ''));

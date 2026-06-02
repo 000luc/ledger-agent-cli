@@ -7,9 +7,11 @@ from pathlib import Path
 import typer
 
 from ledger_agent_cli.db import connect, init_db
+from ledger_agent_cli.errors import LedgerCliError
 from ledger_agent_cli.importers.gl import import_gl
 from ledger_agent_cli.importers.tb import import_tb
 from ledger_agent_cli.jsonio import failure, success
+from ledger_agent_cli.mutations.delete import delete_batch, delete_gl, delete_tb
 from ledger_agent_cli.queries.accounts import search_accounts
 from ledger_agent_cli.queries.reconcile import reconcile_gl_tb
 from ledger_agent_cli.queries.saved import add_saved_query, list_saved_queries, run_saved_query
@@ -25,6 +27,7 @@ variance_app = typer.Typer(no_args_is_help=True)
 trace_app = typer.Typer(no_args_is_help=True)
 reconcile_app = typer.Typer(no_args_is_help=True)
 saved_query_app = typer.Typer(no_args_is_help=True)
+delete_app = typer.Typer(no_args_is_help=True)
 
 app.add_typer(import_app, name="import")
 app.add_typer(accounts_app, name="accounts")
@@ -33,6 +36,7 @@ app.add_typer(variance_app, name="variance")
 app.add_typer(trace_app, name="trace")
 app.add_typer(reconcile_app, name="reconcile")
 app.add_typer(saved_query_app, name="saved-query")
+app.add_typer(delete_app, name="delete")
 
 
 def echo_json(payload: str) -> None:
@@ -53,7 +57,10 @@ def parse_key_values(items: list[str] | None) -> dict[str, str]:
 
 
 def exit_with_error(command: str, exc: Exception) -> None:
-    echo_json(failure(command, "error", str(exc)))
+    if isinstance(exc, LedgerCliError):
+        echo_json(failure(command, exc.code, str(exc), exc.details))
+    else:
+        echo_json(failure(command, "error", str(exc)))
     raise typer.Exit(code=1)
 
 
@@ -96,9 +103,10 @@ def import_gl_command(
     company: str = typer.Option(..., "--company"),
     year: int = typer.Option(..., "--year"),
     mapping: Path = typer.Option(..., "--mapping"),
+    mode: str = typer.Option("error", "--mode"),
 ) -> None:
     try:
-        echo_json(success("import.gl", import_gl(db, file, company, year, mapping)))
+        echo_json(success("import.gl", import_gl(db, file, company, year, mapping, mode)))
     except Exception as exc:
         exit_with_error("import.gl", exc)
 
@@ -110,9 +118,10 @@ def import_tb_command(
     company: str = typer.Option(..., "--company"),
     year: int = typer.Option(..., "--year"),
     mapping: Path = typer.Option(..., "--mapping"),
+    mode: str = typer.Option("error", "--mode"),
 ) -> None:
     try:
-        echo_json(success("import.tb", import_tb(db, file, company, year, mapping)))
+        echo_json(success("import.tb", import_tb(db, file, company, year, mapping, mode)))
     except Exception as exc:
         exit_with_error("import.tb", exc)
 
@@ -247,3 +256,43 @@ def saved_query_run_command(
         echo_json(success("saved-query.run", run_saved_query(db, name, parsed_values, limit)))
     except Exception as exc:
         exit_with_error("saved-query.run", exc)
+
+
+@delete_app.command("batch")
+def delete_batch_command(
+    db: Path = typer.Option(..., "--db"),
+    batch_id: int = typer.Option(..., "--batch-id"),
+    yes: bool = typer.Option(False, "--yes"),
+) -> None:
+    try:
+        echo_json(success("delete.batch", delete_batch(db, batch_id, yes)))
+    except Exception as exc:
+        exit_with_error("delete.batch", exc)
+
+
+@delete_app.command("gl")
+def delete_gl_command(
+    db: Path = typer.Option(..., "--db"),
+    company: str = typer.Option(..., "--company"),
+    year: int = typer.Option(..., "--year"),
+    month: int | None = typer.Option(None, "--month"),
+    yes: bool = typer.Option(False, "--yes"),
+) -> None:
+    try:
+        echo_json(success("delete.gl", delete_gl(db, company, year, month, yes)))
+    except Exception as exc:
+        exit_with_error("delete.gl", exc)
+
+
+@delete_app.command("tb")
+def delete_tb_command(
+    db: Path = typer.Option(..., "--db"),
+    company: str = typer.Option(..., "--company"),
+    year: int = typer.Option(..., "--year"),
+    month: int | None = typer.Option(None, "--month"),
+    yes: bool = typer.Option(False, "--yes"),
+) -> None:
+    try:
+        echo_json(success("delete.tb", delete_tb(db, company, year, month, yes)))
+    except Exception as exc:
+        exit_with_error("delete.tb", exc)
