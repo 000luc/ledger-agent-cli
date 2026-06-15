@@ -63,4 +63,9 @@ def run_saved_query(
             f"SELECT * FROM ({query.rstrip(';')}) LIMIT :__limit",
             {**bind_values, "__limit": safe_limit},
         ).fetchall()
-    return {"name": name, "values": bind_values, "rows": [dict(row) for row in rows], "limit": safe_limit}
+    return {
+        "name": name,
+        "values": bind_values,
+        "rows": [dict(row) for row in rows],
+        "limit": safe_limit,
+    }

@@ -123,7 +123,9 @@ def tb_row_count(db_path):
 
 def tb_debit_total(db_path):
     with connect(db_path) as conn:
-        return conn.execute("SELECT SUM(current_debit_cents) AS n FROM trial_balance").fetchone()["n"]
+        return conn.execute("SELECT SUM(current_debit_cents) AS n FROM trial_balance").fetchone()[
+            "n"
+        ]
 
 
 def test_gl_duplicate_import_defaults_to_error(tmp_path):

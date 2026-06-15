@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import sqlite3
 import json
+import sqlite3
 from pathlib import Path
 
 import typer
@@ -226,7 +226,9 @@ def saved_query_add_command(
     parameter: list[str] = typer.Option(None, "--parameter"),
 ) -> None:
     try:
-        echo_json(success("saved-query.add", add_saved_query(db, name, description, query, parameter)))
+        echo_json(
+            success("saved-query.add", add_saved_query(db, name, description, query, parameter))
+        )
     except Exception as exc:
         exit_with_error("saved-query.add", exc)
 

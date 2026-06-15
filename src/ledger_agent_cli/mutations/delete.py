@@ -45,7 +45,9 @@ def delete_gl(
 
     with transaction(db_path) as conn:
         deleted_lines = conn.execute(f"DELETE FROM journal_lines WHERE {where}", params).rowcount
-        deleted_headers = conn.execute(f"DELETE FROM journal_headers WHERE {where}", params).rowcount
+        deleted_headers = conn.execute(
+            f"DELETE FROM journal_headers WHERE {where}", params
+        ).rowcount
     result.update({"deleted_lines": deleted_lines, "deleted_headers": deleted_headers})
     return result
 
@@ -130,7 +132,9 @@ def delete_batch(db_path: str | Path, batch_id: int, yes: bool = False) -> dict:
             "DELETE FROM trial_balance WHERE import_batch_id=?",
             (batch_id,),
         ).rowcount
-        deleted_batches = conn.execute("DELETE FROM import_batches WHERE id=?", (batch_id,)).rowcount
+        deleted_batches = conn.execute(
+            "DELETE FROM import_batches WHERE id=?", (batch_id,)
+        ).rowcount
     result.update(
         {
             "deleted_lines": deleted_lines,

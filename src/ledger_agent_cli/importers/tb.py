@@ -8,7 +8,12 @@ from ledger_agent_cli.db import transaction
 from ledger_agent_cli.errors import DuplicateImportScopeError, DuplicateInputScopeError
 from ledger_agent_cli.importers.common import apply_mapping, load_mapping, money_to_cents, read_rows
 from ledger_agent_cli.importers.gl import create_batch, ensure_account, ensure_company
-from ledger_agent_cli.importers.modes import count_duplicate_keys, normalize_auxiliary, tb_scope_key, validate_import_mode
+from ledger_agent_cli.importers.modes import (
+    count_duplicate_keys,
+    normalize_auxiliary,
+    tb_scope_key,
+    validate_import_mode,
+)
 
 REQUIRED_TB_FIELDS = ["month", "account_code", "account_name"]
 
@@ -106,7 +111,10 @@ def import_tb(
                 ),
             )
 
-        conn.execute("UPDATE import_batches SET row_count=? WHERE id=?", (len(mapped_rows) - len(skipped_keys), batch_id))
+        conn.execute(
+            "UPDATE import_batches SET row_count=? WHERE id=?",
+            (len(mapped_rows) - len(skipped_keys), batch_id),
+        )
 
     return {
         "company": company,

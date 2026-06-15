@@ -106,7 +106,8 @@ def test_incremental_import_indexes_reject_duplicate_rows(tmp_path):
         conn.execute(
             """
             INSERT INTO trial_balance(
-              company_id, import_batch_id, year, month, account_code, account_name, auxiliary, raw_json
+              company_id, import_batch_id, year, month, account_code,
+              account_name, auxiliary, raw_json
             )
             VALUES (?, ?, 2025, 12, '660201', '差旅费', '', '{}')
             """,
@@ -117,7 +118,8 @@ def test_incremental_import_indexes_reject_duplicate_rows(tmp_path):
             conn.execute(
                 """
                 INSERT INTO trial_balance(
-                  company_id, import_batch_id, year, month, account_code, account_name, auxiliary, raw_json
+                  company_id, import_batch_id, year, month, account_code,
+                  account_name, auxiliary, raw_json
                 )
                 VALUES (?, ?, 2025, 12, '660201', '差旅费', '', '{}')
                 """,

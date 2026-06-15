@@ -13,7 +13,12 @@ from ledger_agent_cli.importers.common import (
     parse_date_text,
     read_rows,
 )
-from ledger_agent_cli.importers.modes import count_duplicate_keys, gl_line_key, gl_scope_key, validate_import_mode
+from ledger_agent_cli.importers.modes import (
+    count_duplicate_keys,
+    gl_line_key,
+    gl_scope_key,
+    validate_import_mode,
+)
 
 REQUIRED_GL_FIELDS = [
     "month",
@@ -212,8 +217,12 @@ def import_gl(
                 ),
             )
 
-        inserted_line_count = len([key for key in map(gl_scope_key, mapped_rows) if key not in skipped_keys])
-        conn.execute("UPDATE import_batches SET row_count=? WHERE id=?", (inserted_line_count, batch_id))
+        inserted_line_count = len(
+            [key for key in map(gl_scope_key, mapped_rows) if key not in skipped_keys]
+        )
+        conn.execute(
+            "UPDATE import_batches SET row_count=? WHERE id=?", (inserted_line_count, batch_id)
+        )
 
     return {
         "company": company,

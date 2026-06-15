@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from importlib import resources
 from pathlib import Path
-from typing import Iterator
 
 
 def connect(db_path: str | Path) -> sqlite3.Connection:
@@ -17,9 +17,7 @@ def connect(db_path: str | Path) -> sqlite3.Connection:
 def init_db(db_path: str | Path) -> None:
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    schema = resources.files("ledger_agent_cli").joinpath("schema.sql").read_text(
-        encoding="utf-8"
-    )
+    schema = resources.files("ledger_agent_cli").joinpath("schema.sql").read_text(encoding="utf-8")
     with connect(path) as conn:
         conn.executescript(schema)
 

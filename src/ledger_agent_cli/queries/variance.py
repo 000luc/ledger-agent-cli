@@ -7,19 +7,23 @@ from ledger_agent_cli.importers.common import cents_to_money
 from ledger_agent_cli.queries.accounts import get_company_id
 
 
-def tb_variance(db_path: str | Path, company: str, year: int, compare_year: int, account: str) -> dict:
+def tb_variance(
+    db_path: str | Path, company: str, year: int, compare_year: int, account: str
+) -> dict:
     with connect(db_path) as conn:
         company_id = get_company_id(conn, company)
         rows = conn.execute(
             """
             WITH cur AS (
-              SELECT account_code, account_name, SUM(current_debit_cents - current_credit_cents) AS amount
+              SELECT account_code, account_name,
+                     SUM(current_debit_cents - current_credit_cents) AS amount
               FROM trial_balance
               WHERE company_id=? AND year=? AND account_name LIKE ?
               GROUP BY account_code, account_name
             ),
             cmp AS (
-              SELECT account_code, account_name, SUM(current_debit_cents - current_credit_cents) AS amount
+              SELECT account_code, account_name,
+                     SUM(current_debit_cents - current_credit_cents) AS amount
               FROM trial_balance
               WHERE company_id=? AND year=? AND account_name LIKE ?
               GROUP BY account_code, account_name
@@ -63,14 +67,18 @@ def tb_variance(db_path: str | Path, company: str, year: int, compare_year: int,
     }
 
 
-def gl_variance(db_path: str | Path, company: str, year: int, compare_year: int, account: str) -> dict:
+def gl_variance(
+    db_path: str | Path, company: str, year: int, compare_year: int, account: str
+) -> dict:
     with connect(db_path) as conn:
         company_id = get_company_id(conn, company)
         totals = conn.execute(
             """
             SELECT
-              SUM(CASE WHEN year=? THEN debit_cents - credit_cents ELSE 0 END) AS current_total_cents,
-              SUM(CASE WHEN year=? THEN debit_cents - credit_cents ELSE 0 END) AS compare_total_cents
+              SUM(CASE WHEN year=? THEN debit_cents - credit_cents ELSE 0 END)
+                AS current_total_cents,
+              SUM(CASE WHEN year=? THEN debit_cents - credit_cents ELSE 0 END)
+                AS compare_total_cents
             FROM journal_lines
             WHERE company_id=? AND account_name LIKE ?
             """,

@@ -125,7 +125,9 @@ def test_delete_batch_only_deletes_headers_from_target_batch(tmp_path):
     db_path = seed_gl_tb(tmp_path)
     batch_id = first_batch_id(db_path, "gl")
     with transaction(db_path) as conn:
-        company_id = conn.execute("SELECT id FROM companies WHERE name=?", ("公司A",)).fetchone()["id"]
+        company_id = conn.execute("SELECT id FROM companies WHERE name=?", ("公司A",)).fetchone()[
+            "id"
+        ]
         other_batch_id = conn.execute(
             """
             INSERT INTO import_batches(company_id, source_type, source_file, year, mapping_json)
@@ -159,7 +161,18 @@ def test_delete_gl_cli_dry_run_and_yes(runner, tmp_path):
 
     dry_run = runner.invoke(
         app,
-        ["delete", "gl", "--db", str(db_path), "--company", "公司A", "--year", "2025", "--month", "1"],
+        [
+            "delete",
+            "gl",
+            "--db",
+            str(db_path),
+            "--company",
+            "公司A",
+            "--year",
+            "2025",
+            "--month",
+            "1",
+        ],
     )
     dry_payload = parse_json(dry_run)
     assert dry_payload["command"] == "delete.gl"
@@ -168,7 +181,19 @@ def test_delete_gl_cli_dry_run_and_yes(runner, tmp_path):
 
     actual = runner.invoke(
         app,
-        ["delete", "gl", "--db", str(db_path), "--company", "公司A", "--year", "2025", "--month", "1", "--yes"],
+        [
+            "delete",
+            "gl",
+            "--db",
+            str(db_path),
+            "--company",
+            "公司A",
+            "--year",
+            "2025",
+            "--month",
+            "1",
+            "--yes",
+        ],
     )
     actual_payload = parse_json(actual)
     assert actual_payload["data"]["deleted_lines"] == 2
@@ -180,7 +205,18 @@ def test_delete_tb_cli_dry_run_and_yes(runner, tmp_path):
 
     dry_run = runner.invoke(
         app,
-        ["delete", "tb", "--db", str(db_path), "--company", "公司A", "--year", "2025", "--month", "12"],
+        [
+            "delete",
+            "tb",
+            "--db",
+            str(db_path),
+            "--company",
+            "公司A",
+            "--year",
+            "2025",
+            "--month",
+            "12",
+        ],
     )
     dry_payload = parse_json(dry_run)
     assert dry_payload["command"] == "delete.tb"
@@ -188,7 +224,19 @@ def test_delete_tb_cli_dry_run_and_yes(runner, tmp_path):
 
     actual = runner.invoke(
         app,
-        ["delete", "tb", "--db", str(db_path), "--company", "公司A", "--year", "2025", "--month", "12", "--yes"],
+        [
+            "delete",
+            "tb",
+            "--db",
+            str(db_path),
+            "--company",
+            "公司A",
+            "--year",
+            "2025",
+            "--month",
+            "12",
+            "--yes",
+        ],
     )
     actual_payload = parse_json(actual)
     assert actual_payload["data"]["deleted_rows"] == 1

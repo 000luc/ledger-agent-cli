@@ -36,7 +36,8 @@ def reconcile_gl_tb(db_path: str | Path, company: str, year: int) -> dict:
                 COALESCE(gl.gl_credit_cents, 0) AS gl_credit_cents,
                 COALESCE(tb.tb_credit_cents, 0) AS tb_credit_cents,
                 COALESCE(gl.gl_debit_cents, 0) - COALESCE(tb.tb_debit_cents, 0) AS debit_diff_cents,
-                COALESCE(gl.gl_credit_cents, 0) - COALESCE(tb.tb_credit_cents, 0) AS credit_diff_cents
+                COALESCE(gl.gl_credit_cents, 0) - COALESCE(tb.tb_credit_cents, 0)
+                  AS credit_diff_cents
               FROM gl
               LEFT JOIN tb ON tb.account_code = gl.account_code
               UNION
