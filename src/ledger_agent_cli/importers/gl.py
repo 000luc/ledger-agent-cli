@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ledger_agent_cli.audit_log import log_operation
 from ledger_agent_cli.db import transaction
 from ledger_agent_cli.errors import DuplicateImportScopeError, DuplicateInputScopeError
 from ledger_agent_cli.importers.common import (
@@ -224,7 +225,7 @@ def import_gl(
             "UPDATE import_batches SET row_count=? WHERE id=?", (inserted_line_count, batch_id)
         )
 
-    return {
+    result = {
         "company": company,
         "year": year,
         "mode": import_mode,
@@ -234,3 +235,16 @@ def import_gl(
         "deleted_count": deleted_count,
         "duplicate_count": len(existing_keys),
     }
+    log_operation(
+        db_path,
+        "import.gl",
+        {
+            "company": company,
+            "year": year,
+            "file": str(source_file),
+            "mapping": str(mapping_path),
+            "mode": import_mode,
+        },
+        result,
+    )
+    return result

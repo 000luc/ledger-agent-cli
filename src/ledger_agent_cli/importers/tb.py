@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ledger_agent_cli.audit_log import log_operation
 from ledger_agent_cli.db import transaction
 from ledger_agent_cli.errors import DuplicateImportScopeError, DuplicateInputScopeError
 from ledger_agent_cli.importers.common import apply_mapping, load_mapping, money_to_cents, read_rows
@@ -116,7 +117,7 @@ def import_tb(
             (len(mapped_rows) - len(skipped_keys), batch_id),
         )
 
-    return {
+    result = {
         "company": company,
         "year": year,
         "mode": import_mode,
@@ -126,3 +127,16 @@ def import_tb(
         "deleted_count": deleted_count,
         "duplicate_count": len(existing_keys),
     }
+    log_operation(
+        db_path,
+        "import.tb",
+        {
+            "company": company,
+            "year": year,
+            "file": str(source_file),
+            "mapping": str(mapping_path),
+            "mode": import_mode,
+        },
+        result,
+    )
+    return result

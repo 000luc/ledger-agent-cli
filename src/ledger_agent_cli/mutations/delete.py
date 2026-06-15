@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ledger_agent_cli.audit_log import log_operation
 from ledger_agent_cli.db import connect, transaction
 from ledger_agent_cli.queries.accounts import get_company_id
 
@@ -49,6 +50,12 @@ def delete_gl(
             f"DELETE FROM journal_headers WHERE {where}", params
         ).rowcount
     result.update({"deleted_lines": deleted_lines, "deleted_headers": deleted_headers})
+    log_operation(
+        db_path,
+        "delete.gl",
+        {"company": company, "year": year, "month": month, "yes": yes},
+        result,
+    )
     return result
 
 
@@ -87,6 +94,12 @@ def delete_tb(
     with transaction(db_path) as conn:
         deleted_rows = conn.execute(f"DELETE FROM trial_balance WHERE {where}", params).rowcount
     result["deleted_rows"] = deleted_rows
+    log_operation(
+        db_path,
+        "delete.tb",
+        {"company": company, "year": year, "month": month, "yes": yes},
+        result,
+    )
     return result
 
 
@@ -142,5 +155,11 @@ def delete_batch(db_path: str | Path, batch_id: int, yes: bool = False) -> dict:
             "deleted_tb_rows": deleted_tb_rows,
             "deleted_batches": deleted_batches,
         }
+    )
+    log_operation(
+        db_path,
+        "delete.batch",
+        {"batch_id": batch_id, "yes": yes},
+        result,
     )
     return result
