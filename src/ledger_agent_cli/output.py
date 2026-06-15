@@ -32,11 +32,11 @@ def get_format() -> str:
 def _flatten_rows(data: Any) -> list[dict[str, Any]]:
     if isinstance(data, dict):
         if "rows" in data and isinstance(data["rows"], list):
-            return data["rows"]
+            return [row for row in data["rows"] if isinstance(row, dict)]
         if "data" in data and isinstance(data["data"], list):
-            return data["data"]
+            return [row for row in data["data"] if isinstance(row, dict)]
     if isinstance(data, list):
-        return data
+        return [row for row in data if isinstance(row, dict)]
     return []
 
 
@@ -62,11 +62,11 @@ def _render_table(command: str, data: Any, meta: dict[str, Any] | None) -> None:
 def _render_csv(data: Any) -> None:
     rows = _flatten_rows(data)
     if not rows:
-        typer.echo("")
+        typer.echo(str(data))
         return
 
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=list(rows[0].keys()))
+    writer = csv.DictWriter(output, fieldnames=list(rows[0].keys()), lineterminator="\n")
     writer.writeheader()
     writer.writerows(rows)
     typer.echo(output.getvalue().rstrip("\n"))

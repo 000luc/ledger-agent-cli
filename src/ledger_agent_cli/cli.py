@@ -97,8 +97,7 @@ def schema(db: Path = typer.Option(..., "--db", help="SQLite database path")) ->
             ).fetchall()
         render_result("schema", {"tables": [row["name"] for row in rows]})
     except sqlite3.Error as exc:
-        render_error("schema", "sqlite_error", str(exc))
-        raise typer.Exit(code=1)
+        exit_with_error("schema", exc)
 
 
 @app.command()
