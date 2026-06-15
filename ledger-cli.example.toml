@@ -1,0 +1,7 @@
+[defaults]
+db = "ledger.db"
+format = "table"
+
+[defaults.import]
+company = "公司A"
+year = 2025
