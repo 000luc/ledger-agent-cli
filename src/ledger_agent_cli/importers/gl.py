@@ -81,10 +81,10 @@ def import_gl(
     mapping_path: str | Path,
     mode: str = "error",
 ) -> dict[str, Any]:
+    import_mode = validate_import_mode(mode)
     source_file = Path(file_path)
     mapping = load_mapping(mapping_path)
     rows = read_rows(source_file)
-    import_mode = validate_import_mode(mode)
     mapped_rows = [apply_mapping(row, mapping, REQUIRED_GL_FIELDS) for row in rows]
     input_duplicate_count = count_duplicate_keys(
         gl_line_key(mapped, index) for index, mapped in enumerate(mapped_rows, start=1)

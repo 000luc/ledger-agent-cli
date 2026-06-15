@@ -26,10 +26,10 @@ def import_tb(
     mapping_path: str | Path,
     mode: str = "error",
 ) -> dict[str, Any]:
+    import_mode = validate_import_mode(mode)
     source_file = Path(file_path)
     mapping = load_mapping(mapping_path)
     rows = read_rows(source_file)
-    import_mode = validate_import_mode(mode)
     mapped_rows = [apply_mapping(row, mapping, REQUIRED_TB_FIELDS) for row in rows]
     input_duplicate_count = count_duplicate_keys(tb_scope_key(mapped) for mapped in mapped_rows)
     if input_duplicate_count:

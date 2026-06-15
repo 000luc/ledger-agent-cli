@@ -33,5 +33,19 @@ class InvalidImportModeError(LedgerCliError):
         super().__init__(
             "invalid_import_mode",
             "Import mode must be one of: error, skip, replace.",
-            {"mode": mode},
+            {"mode": mode, "valid_modes": ["error", "skip", "replace"]},
+        )
+
+
+class CliValidationError(LedgerCliError):
+    def __init__(self, code: str, message: str, details: dict[str, Any] | None = None):
+        super().__init__(code, message, details)
+
+
+class MissingFlagsError(CliValidationError):
+    def __init__(self, missing_flags: list[str]):
+        super().__init__(
+            "missing_required_flags",
+            f"Missing required flags: {', '.join(missing_flags)}",
+            {"missing_flags": missing_flags},
         )

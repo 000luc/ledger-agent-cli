@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 import typer
 
 from ledger_agent_cli.db import connect, init_db
-from ledger_agent_cli.errors import LedgerCliError
+from ledger_agent_cli.errors import LedgerCliError, MissingFlagsError
 from ledger_agent_cli.importers.gl import import_gl
 from ledger_agent_cli.importers.tb import import_tb
 from ledger_agent_cli.mutations.delete import delete_batch, delete_gl, delete_tb
@@ -71,6 +72,12 @@ def parse_key_values(items: list[str] | None) -> dict[str, str]:
     return parsed
 
 
+def require_flags(**kwargs: Any) -> None:
+    missing = [f"--{name.replace('_', '-')}" for name, value in kwargs.items() if value is None]
+    if missing:
+        raise MissingFlagsError(missing)
+
+
 def exit_with_error(command: str, exc: Exception) -> None:
     if isinstance(exc, LedgerCliError):
         render_error(command, exc.code, str(exc), exc.details)
@@ -80,8 +87,9 @@ def exit_with_error(command: str, exc: Exception) -> None:
 
 
 @app.command()
-def init(db: Path = typer.Option(..., "--db", help="SQLite database path")) -> None:
+def init(db: Path = typer.Option(None, "--db", help="SQLite database path")) -> None:
     try:
+        require_flags(db=db)
         init_db(db)
         render_result("init", {"db": str(db)})
     except Exception as exc:
@@ -112,14 +120,15 @@ def companies(db: Path = typer.Option(..., "--db", help="SQLite database path"))
 
 @import_app.command("gl")
 def import_gl_command(
-    db: Path = typer.Option(..., "--db"),
-    file: Path = typer.Option(..., "--file"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
-    mapping: Path = typer.Option(..., "--mapping"),
+    db: Path = typer.Option(None, "--db"),
+    file: Path = typer.Option(None, "--file"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
+    mapping: Path = typer.Option(None, "--mapping"),
     mode: str = typer.Option("error", "--mode"),
 ) -> None:
     try:
+        require_flags(db=db, file=file, company=company, year=year, mapping=mapping)
         render_result("import.gl", import_gl(db, file, company, year, mapping, mode))
     except Exception as exc:
         exit_with_error("import.gl", exc)
@@ -127,14 +136,15 @@ def import_gl_command(
 
 @import_app.command("tb")
 def import_tb_command(
-    db: Path = typer.Option(..., "--db"),
-    file: Path = typer.Option(..., "--file"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
-    mapping: Path = typer.Option(..., "--mapping"),
+    db: Path = typer.Option(None, "--db"),
+    file: Path = typer.Option(None, "--file"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
+    mapping: Path = typer.Option(None, "--mapping"),
     mode: str = typer.Option("error", "--mode"),
 ) -> None:
     try:
+        require_flags(db=db, file=file, company=company, year=year, mapping=mapping)
         render_result("import.tb", import_tb(db, file, company, year, mapping, mode))
     except Exception as exc:
         exit_with_error("import.tb", exc)
@@ -142,12 +152,13 @@ def import_tb_command(
 
 @accounts_app.command("search")
 def accounts_search_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
-    keyword: str = typer.Option(..., "--keyword"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
+    keyword: str = typer.Option(None, "--keyword"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year, keyword=keyword)
         data = search_accounts(db, company, year, keyword)
         render_result("accounts.search", data, {"count": len(data)})
     except Exception as exc:
@@ -156,12 +167,13 @@ def accounts_search_command(
 
 @sql_app.command("select")
 def sql_select_command(
-    db: Path = typer.Option(..., "--db"),
-    query: str = typer.Option(..., "--query"),
+    db: Path = typer.Option(None, "--db"),
+    query: str = typer.Option(None, "--query"),
     limit: int = typer.Option(200, "--limit"),
 ) -> None:
     command = "sql.select"
     try:
+        require_flags(db=db, query=query)
         assert_read_only_select(query)
         safe_limit = min(max(limit, 1), 1000)
         wrapped = f"SELECT * FROM ({query.rstrip(';')}) LIMIT ?"
@@ -179,13 +191,14 @@ def sql_select_command(
 
 @variance_app.command("tb")
 def variance_tb_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
-    compare_year: int = typer.Option(..., "--compare-year"),
-    account: str = typer.Option(..., "--account"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
+    compare_year: int = typer.Option(None, "--compare-year"),
+    account: str = typer.Option(None, "--account"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year, compare_year=compare_year, account=account)
         render_result("variance.tb", tb_variance(db, company, year, compare_year, account))
     except Exception as exc:
         exit_with_error("variance.tb", exc)
@@ -193,13 +206,14 @@ def variance_tb_command(
 
 @variance_app.command("gl")
 def variance_gl_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
-    compare_year: int = typer.Option(..., "--compare-year"),
-    account: str = typer.Option(..., "--account"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
+    compare_year: int = typer.Option(None, "--compare-year"),
+    account: str = typer.Option(None, "--account"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year, compare_year=compare_year, account=account)
         render_result("variance.gl", gl_variance(db, company, year, compare_year, account))
     except Exception as exc:
         exit_with_error("variance.gl", exc)
@@ -207,11 +221,12 @@ def variance_gl_command(
 
 @trace_app.command("depreciation")
 def trace_depreciation_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year)
         render_result("trace.depreciation", trace_depreciation(db, company, year))
     except Exception as exc:
         exit_with_error("trace.depreciation", exc)
@@ -219,11 +234,12 @@ def trace_depreciation_command(
 
 @reconcile_app.command("gl-tb")
 def reconcile_gl_tb_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year)
         render_result("reconcile.gl-tb", reconcile_gl_tb(db, company, year))
     except Exception as exc:
         exit_with_error("reconcile.gl-tb", exc)
@@ -231,13 +247,14 @@ def reconcile_gl_tb_command(
 
 @saved_query_app.command("add")
 def saved_query_add_command(
-    db: Path = typer.Option(..., "--db"),
-    name: str = typer.Option(..., "--name"),
-    description: str = typer.Option(..., "--description"),
-    query: str = typer.Option(..., "--query"),
+    db: Path = typer.Option(None, "--db"),
+    name: str = typer.Option(None, "--name"),
+    description: str = typer.Option(None, "--description"),
+    query: str = typer.Option(None, "--query"),
     parameter: list[str] = typer.Option(None, "--parameter"),
 ) -> None:
     try:
+        require_flags(db=db, name=name, description=description, query=query)
         render_result("saved-query.add", add_saved_query(db, name, description, query, parameter))
     except Exception as exc:
         exit_with_error("saved-query.add", exc)
@@ -254,13 +271,14 @@ def saved_query_list_command(db: Path = typer.Option(..., "--db")) -> None:
 
 @saved_query_app.command("run")
 def saved_query_run_command(
-    db: Path = typer.Option(..., "--db"),
-    name: str = typer.Option(..., "--name"),
+    db: Path = typer.Option(None, "--db"),
+    name: str = typer.Option(None, "--name"),
     values: str = typer.Option("{}", "--values", help="JSON object for named SQL parameters"),
     value: list[str] = typer.Option(None, "--value", help="Named SQL parameter as key=value"),
     limit: int = typer.Option(200, "--limit"),
 ) -> None:
     try:
+        require_flags(db=db, name=name)
         parsed_values = json.loads(values)
         if not isinstance(parsed_values, dict):
             raise ValueError("--values must be a JSON object")
@@ -272,11 +290,12 @@ def saved_query_run_command(
 
 @delete_app.command("batch")
 def delete_batch_command(
-    db: Path = typer.Option(..., "--db"),
-    batch_id: int = typer.Option(..., "--batch-id"),
+    db: Path = typer.Option(None, "--db"),
+    batch_id: int = typer.Option(None, "--batch-id"),
     yes: bool = typer.Option(False, "--yes"),
 ) -> None:
     try:
+        require_flags(db=db, batch_id=batch_id)
         render_result("delete.batch", delete_batch(db, batch_id, yes))
     except Exception as exc:
         exit_with_error("delete.batch", exc)
@@ -284,13 +303,14 @@ def delete_batch_command(
 
 @delete_app.command("gl")
 def delete_gl_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
     month: int | None = typer.Option(None, "--month"),
     yes: bool = typer.Option(False, "--yes"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year)
         render_result("delete.gl", delete_gl(db, company, year, month, yes))
     except Exception as exc:
         exit_with_error("delete.gl", exc)
@@ -298,13 +318,14 @@ def delete_gl_command(
 
 @delete_app.command("tb")
 def delete_tb_command(
-    db: Path = typer.Option(..., "--db"),
-    company: str = typer.Option(..., "--company"),
-    year: int = typer.Option(..., "--year"),
+    db: Path = typer.Option(None, "--db"),
+    company: str = typer.Option(None, "--company"),
+    year: int = typer.Option(None, "--year"),
     month: int | None = typer.Option(None, "--month"),
     yes: bool = typer.Option(False, "--yes"),
 ) -> None:
     try:
+        require_flags(db=db, company=company, year=year)
         render_result("delete.tb", delete_tb(db, company, year, month, yes))
     except Exception as exc:
         exit_with_error("delete.tb", exc)
