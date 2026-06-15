@@ -10,8 +10,8 @@ from ledger_agent_cli.db import connect, init_db
 from ledger_agent_cli.errors import LedgerCliError
 from ledger_agent_cli.importers.gl import import_gl
 from ledger_agent_cli.importers.tb import import_tb
-from ledger_agent_cli.jsonio import failure, success
 from ledger_agent_cli.mutations.delete import delete_batch, delete_gl, delete_tb
+from ledger_agent_cli.output import render_error, render_result, set_format
 from ledger_agent_cli.queries.accounts import search_accounts
 from ledger_agent_cli.queries.reconcile import reconcile_gl_tb
 from ledger_agent_cli.queries.saved import add_saved_query, list_saved_queries, run_saved_query
@@ -39,6 +39,21 @@ app.add_typer(saved_query_app, name="saved-query")
 app.add_typer(delete_app, name="delete")
 
 
+@app.callback()
+def global_options(
+    format: str | None = typer.Option(None, "--format", help="Output format: json, table, csv"),
+) -> None:
+    if format is not None and format not in {"json", "table", "csv"}:
+        render_error(
+            "global",
+            "invalid_format",
+            "Output format must be one of: json, table, csv.",
+            {"format": format, "valid_formats": ["json", "table", "csv"]},
+        )
+        raise typer.Exit(code=1)
+    set_format(format)
+
+
 def echo_json(payload: str) -> None:
     typer.echo(payload)
 
@@ -58,9 +73,9 @@ def parse_key_values(items: list[str] | None) -> dict[str, str]:
 
 def exit_with_error(command: str, exc: Exception) -> None:
     if isinstance(exc, LedgerCliError):
-        echo_json(failure(command, exc.code, str(exc), exc.details))
+        render_error(command, exc.code, str(exc), exc.details)
     else:
-        echo_json(failure(command, "error", str(exc)))
+        render_error(command, "error", str(exc))
     raise typer.Exit(code=1)
 
 
@@ -68,7 +83,7 @@ def exit_with_error(command: str, exc: Exception) -> None:
 def init(db: Path = typer.Option(..., "--db", help="SQLite database path")) -> None:
     try:
         init_db(db)
-        echo_json(success("init", {"db": str(db)}))
+        render_result("init", {"db": str(db)})
     except Exception as exc:
         exit_with_error("init", exc)
 
@@ -80,9 +95,9 @@ def schema(db: Path = typer.Option(..., "--db", help="SQLite database path")) ->
             rows = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             ).fetchall()
-        echo_json(success("schema", {"tables": [row["name"] for row in rows]}))
+        render_result("schema", {"tables": [row["name"] for row in rows]})
     except sqlite3.Error as exc:
-        echo_json(failure("schema", "sqlite_error", str(exc)))
+        render_error("schema", "sqlite_error", str(exc))
         raise typer.Exit(code=1)
 
 
@@ -91,7 +106,7 @@ def companies(db: Path = typer.Option(..., "--db", help="SQLite database path"))
     try:
         with connect(db) as conn:
             rows = conn.execute("SELECT id, name FROM companies ORDER BY name").fetchall()
-        echo_json(success("companies", [dict(row) for row in rows], {"count": len(rows)}))
+        render_result("companies", [dict(row) for row in rows], {"count": len(rows)})
     except Exception as exc:
         exit_with_error("companies", exc)
 
@@ -106,7 +121,7 @@ def import_gl_command(
     mode: str = typer.Option("error", "--mode"),
 ) -> None:
     try:
-        echo_json(success("import.gl", import_gl(db, file, company, year, mapping, mode)))
+        render_result("import.gl", import_gl(db, file, company, year, mapping, mode))
     except Exception as exc:
         exit_with_error("import.gl", exc)
 
@@ -121,7 +136,7 @@ def import_tb_command(
     mode: str = typer.Option("error", "--mode"),
 ) -> None:
     try:
-        echo_json(success("import.tb", import_tb(db, file, company, year, mapping, mode)))
+        render_result("import.tb", import_tb(db, file, company, year, mapping, mode))
     except Exception as exc:
         exit_with_error("import.tb", exc)
 
@@ -135,7 +150,7 @@ def accounts_search_command(
 ) -> None:
     try:
         data = search_accounts(db, company, year, keyword)
-        echo_json(success("accounts.search", data, {"count": len(data)}))
+        render_result("accounts.search", data, {"count": len(data)})
     except Exception as exc:
         exit_with_error("accounts.search", exc)
 
@@ -153,15 +168,13 @@ def sql_select_command(
         wrapped = f"SELECT * FROM ({query.rstrip(';')}) LIMIT ?"
         with connect(db) as conn:
             rows = conn.execute(wrapped, (safe_limit,)).fetchall()
-        echo_json(
-            success(
-                command,
-                {"rows": [dict(row) for row in rows]},
-                {"returned": len(rows), "limit": safe_limit},
-            )
+        render_result(
+            command,
+            {"rows": [dict(row) for row in rows]},
+            {"returned": len(rows), "limit": safe_limit},
         )
     except Exception as exc:
-        echo_json(failure(command, "sql_error", str(exc)))
+        render_error(command, "sql_error", str(exc))
         raise typer.Exit(code=1)
 
 
@@ -174,7 +187,7 @@ def variance_tb_command(
     account: str = typer.Option(..., "--account"),
 ) -> None:
     try:
-        echo_json(success("variance.tb", tb_variance(db, company, year, compare_year, account)))
+        render_result("variance.tb", tb_variance(db, company, year, compare_year, account))
     except Exception as exc:
         exit_with_error("variance.tb", exc)
 
@@ -188,7 +201,7 @@ def variance_gl_command(
     account: str = typer.Option(..., "--account"),
 ) -> None:
     try:
-        echo_json(success("variance.gl", gl_variance(db, company, year, compare_year, account)))
+        render_result("variance.gl", gl_variance(db, company, year, compare_year, account))
     except Exception as exc:
         exit_with_error("variance.gl", exc)
 
@@ -200,7 +213,7 @@ def trace_depreciation_command(
     year: int = typer.Option(..., "--year"),
 ) -> None:
     try:
-        echo_json(success("trace.depreciation", trace_depreciation(db, company, year)))
+        render_result("trace.depreciation", trace_depreciation(db, company, year))
     except Exception as exc:
         exit_with_error("trace.depreciation", exc)
 
@@ -212,7 +225,7 @@ def reconcile_gl_tb_command(
     year: int = typer.Option(..., "--year"),
 ) -> None:
     try:
-        echo_json(success("reconcile.gl-tb", reconcile_gl_tb(db, company, year)))
+        render_result("reconcile.gl-tb", reconcile_gl_tb(db, company, year))
     except Exception as exc:
         exit_with_error("reconcile.gl-tb", exc)
 
@@ -226,9 +239,7 @@ def saved_query_add_command(
     parameter: list[str] = typer.Option(None, "--parameter"),
 ) -> None:
     try:
-        echo_json(
-            success("saved-query.add", add_saved_query(db, name, description, query, parameter))
-        )
+        render_result("saved-query.add", add_saved_query(db, name, description, query, parameter))
     except Exception as exc:
         exit_with_error("saved-query.add", exc)
 
@@ -237,7 +248,7 @@ def saved_query_add_command(
 def saved_query_list_command(db: Path = typer.Option(..., "--db")) -> None:
     try:
         data = list_saved_queries(db)
-        echo_json(success("saved-query.list", data, {"count": len(data)}))
+        render_result("saved-query.list", data, {"count": len(data)})
     except Exception as exc:
         exit_with_error("saved-query.list", exc)
 
@@ -255,7 +266,7 @@ def saved_query_run_command(
         if not isinstance(parsed_values, dict):
             raise ValueError("--values must be a JSON object")
         parsed_values.update(parse_key_values(value))
-        echo_json(success("saved-query.run", run_saved_query(db, name, parsed_values, limit)))
+        render_result("saved-query.run", run_saved_query(db, name, parsed_values, limit))
     except Exception as exc:
         exit_with_error("saved-query.run", exc)
 
@@ -267,7 +278,7 @@ def delete_batch_command(
     yes: bool = typer.Option(False, "--yes"),
 ) -> None:
     try:
-        echo_json(success("delete.batch", delete_batch(db, batch_id, yes)))
+        render_result("delete.batch", delete_batch(db, batch_id, yes))
     except Exception as exc:
         exit_with_error("delete.batch", exc)
 
@@ -281,7 +292,7 @@ def delete_gl_command(
     yes: bool = typer.Option(False, "--yes"),
 ) -> None:
     try:
-        echo_json(success("delete.gl", delete_gl(db, company, year, month, yes)))
+        render_result("delete.gl", delete_gl(db, company, year, month, yes))
     except Exception as exc:
         exit_with_error("delete.gl", exc)
 
@@ -295,6 +306,6 @@ def delete_tb_command(
     yes: bool = typer.Option(False, "--yes"),
 ) -> None:
     try:
-        echo_json(success("delete.tb", delete_tb(db, company, year, month, yes)))
+        render_result("delete.tb", delete_tb(db, company, year, month, yes))
     except Exception as exc:
         exit_with_error("delete.tb", exc)
