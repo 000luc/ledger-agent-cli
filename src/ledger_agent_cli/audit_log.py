@@ -8,7 +8,7 @@ from typing import Any
 
 def _log_path(db_path: str | Path) -> Path:
     path = Path(db_path)
-    return path.parent / "ledger-cli.log" if path.suffix else path / "ledger-cli.log"
+    return path.parent / "ledger-cli.log"
 
 
 def log_operation(
@@ -26,8 +26,12 @@ def log_operation(
         "success": success,
     }
     log_file = _log_path(db_path)
-    with open(log_file, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    try:
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except OSError:
+        # Intentionally silent: audit logging must never break the main operation.
+        pass
 
 
 def _sanitize_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
