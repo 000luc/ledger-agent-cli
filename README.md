@@ -90,6 +90,45 @@ ledger-cli saved-query run --db ledger.db --name echo-year --value year=2025
 - 保留原始导入行 `raw_json`，方便回溯源数据。
 - 使用整数分保存金额，避免浮点误差。
 
+## 输出格式
+
+CLI 支持三种输出格式，方便人类查看或 agent 解析：
+
+```powershell
+# agent 调用建议显式指定 JSON
+ledger-cli accounts search --db ledger.db --company 公司A --year 2025 --keyword 差旅 --format json
+
+# 人类在终端默认看到表格；也可显式指定
+ledger-cli accounts search --db ledger.db --company 公司A --year 2025 --keyword 差旅 --format table
+
+# 贴到 Excel
+ledger-cli accounts search --db ledger.db --company 公司A --year 2025 --keyword 差旅 --format csv
+```
+
+- TTY（人类在终端）默认 `table`。
+- 非 TTY（agent、管道、CI）默认 `json`。
+- 错误信息始终输出 JSON，便于 agent 识别。
+
+## 配置文件
+
+在项目根目录创建 `ledger-cli.toml`，减少重复参数：
+
+```toml
+[defaults]
+db = "ledger.db"
+format = "table"
+
+[defaults.import]
+company = "公司A"
+year = 2025
+```
+
+参数优先级：**CLI flag > 配置文件 > 默认值**。
+
+## 审计日志
+
+所有导入、替换、删除操作都会追加写入数据库同目录的 `ledger-cli.log`，便于审计追溯。
+
 ## 测试
 
 ```powershell

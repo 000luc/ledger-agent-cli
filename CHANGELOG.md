@@ -1,5 +1,34 @@
 # 版本更新说明
 
+## 2026-06-15
+
+### 新增功能
+
+- 输出格式支持 `json`、`table`、`csv`，TTY 默认表格，非 TTY 默认 JSON。
+- 结构化错误信息：缺必填参数返回 `missing_required_flags`，非法枚举返回 `valid_modes`。
+- 支持 `ledger-cli.toml` / `.ledger-cli.toml` 配置文件，可设置默认 `db`、`format`、`company`、`year`。
+- 新增 Claude Code skill 文件 `.claude/skills/ledger-cli.skill.md`。
+- 导入、替换、删除操作写入审计日志 `ledger-cli.log`。
+- 新增 ruff 代码格式化和 lint 配置，以及 GitHub Actions CI。
+
+### 修复内容
+
+- 统一所有命令必填参数的错误输出格式。
+- 审计日志写入失败不中断主操作。
+
+### 测试结果（84 passed）
+
+- `python -m pytest -v`：84 passed。
+- `ruff check src tests` 和 `ruff format --check src tests` 全部通过。
+
+### 使用方式变化
+
+```powershell
+ledger-cli accounts search --db ledger.db --company 公司A --year 2025 --keyword 差旅 --format table
+ledger-cli import gl --db ledger.db --file gl.csv --company 公司A --year 2025 --mapping gl.json --format json
+ledger-cli import tb --db ledger.db --file tb.csv --company 公司A --year 2025 --mapping tb.json --format csv
+```
+
 ## 2026-06-02 - `964af5d`
 
 ### 新增功能
@@ -17,7 +46,7 @@
 - 输入文件内部重复时返回受控 JSON 错误，不再等 SQLite 约束报错。
 - `delete batch` 只删除目标批次的凭证头，不影响其他批次。
 
-### 测试结果
+### 测试结果（47 passed）
 
 - `python -m pytest -v`：47 passed。
 - CLI 冒烟通过：初始化、导入、重复导入 skip、删除 dry-run、真实删除。

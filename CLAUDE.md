@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 python -m pip install -e .[dev]
 ```
 
-项目没有配置 lint 工具（ruff/black/mypy 等），当前唯一的质量门禁是 pytest。
+开发依赖包含 `pytest` 和 `ruff`。ruff 负责 lint 和 format，配置在 `pyproject.toml` 中。
 
 ### 测试
 
@@ -47,6 +47,33 @@ ledger-cli reconcile gl-tb --db ledger.db --company 公司A --year 2025
 ledger-cli sql select --db ledger.db --query "SELECT name FROM companies"
 ```
 
+### 输出格式
+
+CLI 支持 `--format json|table|csv`：
+
+- TTY（人类在终端）默认 `table`。
+- 非 TTY（agent、管道、CI）默认 `json`。
+- 错误信息始终输出 JSON。
+
+```powershell
+ledger-cli accounts search --db ledger.db --company 公司A --year 2025 --keyword 差旅 --format table
+ledger-cli import gl --db ledger.db --file gl.csv --company 公司A --year 2025 --mapping gl.json --format json
+```
+
+### 配置文件
+
+支持 `ledger-cli.toml` / `.ledger-cli.toml`，优先级：**CLI flag > 配置文件 > 默认值**。
+
+```toml
+[defaults]
+db = "ledger.db"
+format = "table"
+
+[defaults.import]
+company = "公司A"
+year = 2025
+```
+
 ### 导入与删除
 
 导入默认 `--mode error`，发现重复即报错。支持 `error`、`skip`、`replace`。
@@ -75,6 +102,10 @@ CLI 入口统一在 `src/ledger_agent_cli/cli.py`，使用 Typer 组织命令组
 - `queries/`：查询与审计分析，包括科目搜索、年度差异、折旧去向、GL/TB 勾稽、保存的查询模板。
 - `mutations/`：受控的数据变更，目前只有删除。
 - `db.py` / `schema.sql`：SQLite 连接、事务、`import_batches` 等核心表结构。
+- `output.py`：TTY 检测和 JSON/table/CSV 输出渲染。
+- `config.py`：`ledger-cli.toml` 配置加载。
+- `audit_log.py`：导入/删除操作的审计日志写入。
+- `.claude/skills/ledger-cli.skill.md`：Claude Code 使用指南。
 
 所有 CLI 输出都经过 `jsonio.py` 包装成统一 JSON 结构：`{ok, command, data, meta, error}`。
 
