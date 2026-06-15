@@ -11,6 +11,30 @@ def test_missing_required_flags_returns_structured_json(runner):
     assert "--db" in payload["error"]["details"]["missing_flags"]
 
 
+def test_schema_missing_db_returns_structured_json(runner):
+    result = runner.invoke(app, ["schema"])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["error"]["code"] == "missing_required_flags"
+    assert "--db" in payload["error"]["details"]["missing_flags"]
+
+
+def test_companies_missing_db_returns_structured_json(runner):
+    result = runner.invoke(app, ["companies"])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["error"]["code"] == "missing_required_flags"
+    assert "--db" in payload["error"]["details"]["missing_flags"]
+
+
+def test_saved_query_list_missing_db_returns_structured_json(runner):
+    result = runner.invoke(app, ["saved-query", "list"])
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["error"]["code"] == "missing_required_flags"
+    assert "--db" in payload["error"]["details"]["missing_flags"]
+
+
 def test_invalid_import_mode_returns_valid_modes(runner):
     result = runner.invoke(
         app,

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -97,20 +96,22 @@ def init(db: Path = typer.Option(None, "--db", help="SQLite database path")) -> 
 
 
 @app.command()
-def schema(db: Path = typer.Option(..., "--db", help="SQLite database path")) -> None:
+def schema(db: Path = typer.Option(None, "--db", help="SQLite database path")) -> None:
     try:
+        require_flags(db=db)
         with connect(db) as conn:
             rows = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             ).fetchall()
         render_result("schema", {"tables": [row["name"] for row in rows]})
-    except sqlite3.Error as exc:
+    except Exception as exc:
         exit_with_error("schema", exc)
 
 
 @app.command()
-def companies(db: Path = typer.Option(..., "--db", help="SQLite database path")) -> None:
+def companies(db: Path = typer.Option(None, "--db", help="SQLite database path")) -> None:
     try:
+        require_flags(db=db)
         with connect(db) as conn:
             rows = conn.execute("SELECT id, name FROM companies ORDER BY name").fetchall()
         render_result("companies", [dict(row) for row in rows], {"count": len(rows)})
@@ -185,8 +186,7 @@ def sql_select_command(
             {"returned": len(rows), "limit": safe_limit},
         )
     except Exception as exc:
-        render_error(command, "sql_error", str(exc))
-        raise typer.Exit(code=1)
+        exit_with_error(command, exc)
 
 
 @variance_app.command("tb")
@@ -261,8 +261,9 @@ def saved_query_add_command(
 
 
 @saved_query_app.command("list")
-def saved_query_list_command(db: Path = typer.Option(..., "--db")) -> None:
+def saved_query_list_command(db: Path = typer.Option(None, "--db")) -> None:
     try:
+        require_flags(db=db)
         data = list_saved_queries(db)
         render_result("saved-query.list", data, {"count": len(data)})
     except Exception as exc:
