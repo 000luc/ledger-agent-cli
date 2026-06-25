@@ -7,3 +7,4 @@ __pycache__/
 *.sqlite3
 dist/
 build/
+ledger-cli.log

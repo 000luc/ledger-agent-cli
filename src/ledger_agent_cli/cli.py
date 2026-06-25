@@ -20,6 +20,13 @@ from ledger_agent_cli.queries.trace import trace_depreciation
 from ledger_agent_cli.queries.variance import gl_variance, tb_variance
 from ledger_agent_cli.sql_guard import assert_read_only_select
 
+try:
+    from ledger_agent_cli.chat.engine import ChatEngine
+
+    _chat_available = True
+except ImportError:
+    _chat_available = False
+
 app = typer.Typer(no_args_is_help=True)
 import_app = typer.Typer(no_args_is_help=True)
 accounts_app = typer.Typer(no_args_is_help=True)
@@ -350,3 +357,63 @@ def delete_tb_command(
         render_result("delete.tb", delete_tb(db, company, year, month, yes))
     except Exception as exc:
         exit_with_error("delete.tb", exc)
+
+
+@app.command()
+def chat(
+    db: Path = typer.Option(_default_db, "--db", help="SQLite database path"),
+    api_key: str = typer.Option(
+        None,
+        "--api-key",
+        envvar="DEEPSEEK_API_KEY",
+        help="DeepSeek API key, 默认从 DEEPSEEK_API_KEY 环境变量读取",
+    ),
+    model: str = typer.Option(
+        "deepseek-chat", "--model", help="DeepSeek 模型名称"
+    ),
+) -> None:
+    """启动交互式财务问答会话。"""
+    try:
+        if not api_key:
+            render_error(
+                "chat",
+                "missing_api_key",
+                "请设置 DEEPSEEK_API_KEY 环境变量或通过 --api-key 传入。",
+            )
+            raise typer.Exit(code=1)
+        require_flags(db=db)
+        if not _chat_available:
+            render_error(
+                "chat",
+                "missing_dependency",
+                "缺少 openai 包，请执行: python -m pip install openai",
+            )
+            raise typer.Exit(code=1)
+
+        engine = ChatEngine(db, api_key, model)
+
+        if engine.is_empty():
+            typer.echo("提示：数据库中暂无数据，请先用 import 命令导入序时账和科目余额表。")
+
+        typer.echo(
+            f"账簿查询助手已启动（模型：{model}），输入 exit 退出。"
+        )
+        while True:
+            try:
+                user_input = input(">>> ")
+            except (EOFError, KeyboardInterrupt):
+                typer.echo("")
+                break
+            if user_input.strip().lower() in ("exit", "quit"):
+                break
+            if not user_input.strip():
+                continue
+            try:
+                response = engine.chat(user_input.strip())
+                typer.echo(response)
+            except Exception as exc:
+                render_error("chat", "chat_error", str(exc))
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        exit_with_error("chat", exc)
