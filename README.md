@@ -109,6 +109,33 @@ ledger-cli accounts search --db ledger.db --company 公司A --year 2025 --keywor
 - 非 TTY（agent、管道、CI）默认 `json`。
 - 错误信息始终输出 JSON，便于 agent 识别。
 
+## AI 对话查询
+
+`ledger-cli chat` 利用 DeepSeek AI 理解自然语言问题，自动调用查询工具查数据库，用中文回答。
+
+```powershell
+# 设置 API key（首次使用需要）
+set DEEPSEEK_API_KEY=sk-your-key-here
+
+# 启动对话
+ledger-cli chat --db ledger.db
+
+# 也可以直接传入 API key
+ledger-cli chat --db ledger.db --api-key sk-your-key-here
+```
+
+启动后进入交互模式，直接输入财务问题：
+
+```text
+>>> 今年差旅费多少？
+>>> 和去年比差异多少？
+>>> 折旧分配到哪些部门了？
+>>> 查一下有哪些公司
+>>> 帮我做一下勾稽核对
+```
+
+输入 `exit` 退出。AI 会自动调用预设的查询工具并返回中文分析结果。
+
 ## 配置文件
 
 在项目根目录创建 `ledger-cli.toml`，减少重复参数：
